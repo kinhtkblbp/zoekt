@@ -58,6 +58,14 @@ type Branch struct {
 
 // Options sets options for the index building.
 type Options struct {
+	// IndexTime overrides the time recorded in generated shards. The zero value
+	// preserves the default behavior of using the current time.
+	IndexTime time.Time
+
+	// ShardID overrides the identifier recorded in generated shards. The empty
+	// value preserves the default behavior of generating an XID from IndexTime.
+	ShardID string
+
 	// IndexDir is a directory that holds *.zoekt index files.
 	IndexDir string
 
@@ -598,9 +606,15 @@ func NewBuilder(opts Options) (*Builder, error) {
 		return nil, err
 	}
 
-	now := time.Now()
+	now := opts.IndexTime
+	if now.IsZero() {
+		now = time.Now()
+	}
 	b.indexTime = now
-	b.id = xid.NewWithTime(now).String()
+	b.id = opts.ShardID
+	if b.id == "" {
+		b.id = xid.NewWithTime(now).String()
+	}
 
 	return b, nil
 }
